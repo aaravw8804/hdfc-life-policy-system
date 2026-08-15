@@ -10,91 +10,178 @@ import com.hdfclife.observer.BranchLetterNotifier;
 import com.hdfclife.observer.InAppNotifier;
 import com.hdfclife.service.ClaimService;
 import com.hdfclife.store.PolicyStore;
-import com.hdfclife.strategy.PremiumCalculator;
-import com.hdfclife.strategy.UlipPremiumStrategy;
+import com.hdfclife.strategy.*;
 
 import java.util.Iterator;
+import java.util.Scanner;
 
 public class Main {
+
     public static void main(String[] args) {
-        // 1. Company Name from AppConfig
+
+        Scanner sc = new Scanner(System.in);
+
+        // 1. Company Name
         System.out.println(AppConfig.INSTANCE.getCompanyName());
+        System.out.println("-------------------------------------------------------------");
 
-        // Initialize Store and populate via PolicyFactory
         PolicyStore store = new PolicyStore();
-        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1001", "Anita Sharma ", "TERM", 18500, "Active"));
-        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1002", "Rahul Mehta", "ULIP", 42000, "Active"));
-        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1003", "Priya Nair", "ENDOWMENT", 27000, "Lapsed"));
-        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1004", "Vikram Singh", "TERM", 15200, "Active"));
-        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1005", "Sneha Patel", "ULIP", 36000, "Active"));
-        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1006", "Anita Sharma", "ENDOWMENT", 22000, "Pending"));
 
-        // 2. Print all 6 policies using an Iterator
-        Iterator<Policy> iterator = store.getPolicyList().iterator();
-        while (iterator.hasNext()) {
-            System.out.println(iterator.next());
+        // ----------------------
+        //  DYNAMIC POLICY ENTRY
+        // ----------------------
+        System.out.print("How many policies do you want to enter? ");
+        int n = Integer.parseInt(sc.nextLine());
 
+        for (int i = 0; i < n; i++) {
+            System.out.println("\nEnter details for Policy " + (i + 1));
+
+            System.out.print("Policy ID: ");
+            String id = sc.nextLine();
+
+            System.out.print("Customer Name: ");
+            String customer = sc.nextLine();
+
+            System.out.print("Policy Type (TERM/ULIP/ENDOWMENT): ");
+            String type = sc.nextLine().toUpperCase();
+
+            System.out.print("Base Premium: ");
+            int premium = Integer.parseInt(sc.nextLine());
+
+            System.out.print("Status (Active/Lapsed/Pending): ");
+            String status = sc.nextLine();
+
+            try {
+                store.addPolicy(PolicyFactory.create(id, customer, type, premium, status));
+            } catch (PolicyServiceException e) {
+                System.out.println("Error adding policy → " + e.getMessage());
+            }
         }
 
-        // 3. Unique customer count
-        System.out.println("Unique customer count → " + store.getUniqueCustomerCount());
+        // ----------------------
+        // List all policies
+        //-----------------------
+        System.out.println("\nAll Policies Entered:");
+        Iterator<Policy> it = store.getPolicyList().iterator();
+        while (it.hasNext()) {
+            System.out.println(it.next());
+        }
 
-        // 4. Lookup HDFC-LIFE-1004
-        Policy lookedUpPolicy = store.lookup("HDFC-LIFE-1004");
-        System.out.println("Lookup HDFC-LIFE-1004 → " + lookedUpPolicy.getCustomerName());
+        // Unique customers
+        System.out.println("\nUnique customer count → " + store.getUniqueCustomerCount());
 
-        // 5. TreeMap keys in sorted order
-        System.out.println("TreeMap keys in sorted order → " + store.getSortedPolicyKeys());
+        // Lookup
+        System.out.print("\nEnter a Policy ID to lookup: ");
+        String lookupId = sc.nextLine();
+        try {
+            Policy lookedUp = store.lookup(lookupId);
+            System.out.println("Customer for " + lookupId + " → " + lookedUp.getCustomerName());
+        } catch (PolicyServiceException e) {
+            System.out.println("Lookup Error → " + e.getMessage());
+        }
 
-        // 6. ULIP premium for HDFC-LIFE-1002
-        Policy ulipPolicy = store.lookup("HDFC-LIFE-1002");
-        PremiumCalculator calculator = new PremiumCalculator(new UlipPremiumStrategy());
-        int calculatedUlipPremium = calculator.calculatePremium(ulipPolicy.getBasePremium());
-        System.out.println("ULIP premium for HDFC-LIFE-1002 → " + calculatedUlipPremium);
+        // Sorted keys
+        System.out.println("Sorted Policy IDs → " + store.getSortedPolicyKeys());
 
-        // 7. Observer setup & Claim processing
+        // ----------------------
+        // DYNAMIC PREMIUM CALCULATION
+        // ----------------------
+        System.out.print("\nEnter any Policy ID to calculate premium: ");
+        String pid = sc.nextLine();
+
+        try {
+            Policy p = store.lookup(pid);
+
+            PremiumCalculator calc;
+
+            switch (p.getType().toUpperCase()) {
+                case "ULIP":
+                    calc = new PremiumCalculator(new UlipPremiumStrategy());
+                    break;
+                case "TERM":
+                    calc = new PremiumCalculator(new TermPremiumStrategy());
+                    break;
+                case "ENDOWMENT":
+                    calc = new PremiumCalculator(new EndowmentPremiumStrategy());
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown policy type: " + p.getType());
+            }
+
+            int result = calc.calculatePremium(p.getBasePremium());
+            System.out.println("Premium for " + pid + " (" + p.getType() + ") → " + result);
+
+        } catch (PolicyServiceException e) {
+            System.out.println("Premium calculation error → " + e.getMessage());
+        }
+
+        // ----------------------
+        // CLAIM PROCESSING (Dynamic)
+        // ----------------------
         ClaimService claimService = new ClaimService();
         claimService.getEventPublisher().register(new InAppNotifier());
         claimService.getEventPublisher().register(new BranchLetterNotifier());
 
-        Claim claimHigh = claimService.fileClaim("HDFC-LIFE-1001", 25000, Urgency.HIGH, "Apollo", "Emergency");
-        Claim claimMed = claimService.fileClaim("HDFC-LIFE-1002", 30000, Urgency.MEDIUM, "Fortis", "Checkup");
-        Claim claimLow = claimService.fileClaim("HDFC-LIFE-1004", 15000, Urgency.LOW, "Max", "Routine");
+        System.out.print("\nHow many claims do you want to file? ");
+        int c = Integer.parseInt(sc.nextLine());
 
-        System.out.println("Both observer messages after HIGH claim status →");
-        claimService.updateClaimStatus(claimHigh, "APPROVED");
+        for (int i = 0; i < c; i++) {
+            System.out.println("\nEnter Claim " + (i + 1));
 
-        // 8. PriorityQueue poll order verification message
-        System.out.print("PriorityQueue poll order → ");
-        StringBuilder pqOrder = new StringBuilder();
-        while (!claimService.getClaimQueue().isEmpty()) {
-            pqOrder.append(claimService.getClaimQueue().poll().getUrgency());
-            if (!claimService.getClaimQueue().isEmpty()) {
-                pqOrder.append(", then ");
+            System.out.print("Policy ID: ");
+            String policyId = sc.nextLine();
+
+            System.out.print("Claim Amount: ");
+            int amount = Integer.parseInt(sc.nextLine());
+
+            System.out.print("Urgency (HIGH/MEDIUM/LOW): ");
+            Urgency urgency = Urgency.valueOf(sc.nextLine().toUpperCase());
+
+            System.out.print("Hospital Name: ");
+            String hospital = sc.nextLine();
+
+            System.out.print("Reason: ");
+            String reason = sc.nextLine();
+
+            try {
+                claimService.fileClaim(policyId, amount, urgency, hospital, reason);
+            } catch (PolicyServiceException e) {
+                System.out.println("Error filing claim → " + e.getMessage());
             }
         }
-        System.out.println(pqOrder);
 
-        // 9. Exception Handling Demonstrations
+        // Status update example
+        System.out.println("\nUpdating all HIGH urgency claims to APPROVED...");
+        for (Claim claim : claimService.getClaimQueue()) {
+            if (claim.getUrgency() == Urgency.HIGH) {
+                claimService.updateClaimStatus(claim, "APPROVED");
+            }
+        }
+
+        // ----------------------
+        // Priority Queue Poll Order
+        // ----------------------
+        System.out.print("\nPriorityQueue poll order → ");
+        while (!claimService.getClaimQueue().isEmpty()) {
+            System.out.print(claimService.getClaimQueue().poll().getUrgency());
+            if (!claimService.getClaimQueue().isEmpty()) {
+                System.out.print(", then ");
+            }
+        }
+        System.out.println();
+
+        // ----------------------
+        // Exception Demonstrations (Optional)
+        // ----------------------
         try {
             store.lookup("HDFC-LIFE-9999");
         } catch (PolicyServiceException e) {
-            System.out.println("Caught message for \"HDFC-LIFE-9999\" → " + e.getMessage());
+            System.out.println("\nExpected Exception → " + e.getMessage());
         }
 
-        try {
-            claimService.fileClaim("HDFC-LIFE-1001", 600000, Urgency.HIGH, "Apollo", "Over limit");
-        } catch (PolicyServiceException e) {
-            System.out.println("Caught message for claim amount 600000 → " + e.getMessage());
-        }
+        // Audit log confirmation
+        System.out.println("\nCheck audit.log → all dynamic claim filings are logged successfully.");
 
-        try {
-            PolicyFactory.create("INVALID", "HDFC-LIFE-9999", "Test User", 10000, "Active");
-        } catch (PolicyServiceException e) {
-            System.out.println("Caught message for factory type \"INVALID\" → " + e.getMessage());
-        }
-
-        // Audit Log verification check confirmation line
-        System.out.println("A line in audit.log for a filed claim");
+        sc.close();
     }
 }
