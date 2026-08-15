@@ -22,12 +22,12 @@ public class Main {
 
         // Initialize Store and populate via PolicyFactory
         PolicyStore store = new PolicyStore();
-        store.addPolicy(PolicyFactory.create("TERM", "HDFC-LIFE-1001", "Anita Sharma", 18500, "Active"));
-        store.addPolicy(PolicyFactory.create("ULIP", "HDFC-LIFE-1002", "Rahul Mehta", 42000, "Active"));
-        store.addPolicy(PolicyFactory.create("ENDOWMENT", "HDFC-LIFE-1003", "Priya Nair", 27000, "Lapsed"));
-        store.addPolicy(PolicyFactory.create("TERM", "HDFC-LIFE-1004", "Vikram Singh", 15200, "Active"));
-        store.addPolicy(PolicyFactory.create("ULIP", "HDFC-LIFE-1005", "Sneha Patel", 36000, "Active"));
-        store.addPolicy(PolicyFactory.create("ENDOWMENT", "HDFC-LIFE-1006", "Anita Sharma", 22000, "Pending"));
+        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1001", "Anita Sharma ", "TERM", 18500, "Active"));
+        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1002", "Rahul Mehta", "ULIP", 42000, "Active"));
+        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1003", "Priya Nair", "ENDOWMENT", 27000, "Lapsed"));
+        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1004", "Vikram Singh", "TERM", 15200, "Active"));
+        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1005", "Sneha Patel", "ULIP", 36000, "Active"));
+        store.addPolicy(PolicyFactory.create("HDFC-LIFE-1006", "Anita Sharma", "ENDOWMENT", 22000, "Pending"));
 
         // 2. Print all 6 policies using an Iterator
         Iterator<Policy> iterator = store.getPolicyList().iterator();

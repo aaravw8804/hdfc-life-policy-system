@@ -36,6 +36,6 @@ public class Policy {
     }
 
     public String toString() {
-        return policyNo + "|" + customerName + "|" + type + "|" + basePremium + "|" + status;
+        return policyNo + " | " + customerName + " | " + type + " | " + basePremium + " | " + status;
     }
 }
