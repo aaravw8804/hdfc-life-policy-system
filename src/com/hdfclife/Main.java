@@ -33,6 +33,7 @@ public class Main {
         Iterator<Policy> iterator = store.getPolicyList().iterator();
         while (iterator.hasNext()) {
             System.out.println(iterator.next());
+
         }
 
         // 3. Unique customer count
