@@ -672,4 +672,4 @@ HDFC Life Policy Claims Console
 └── 📝 Auto-Closeable Audit Logging
 ```
 
-**Built with ❤️ using Core Java and Object-Oriented Design.**
+**Built using Core Java and Object-Oriented Design.**
