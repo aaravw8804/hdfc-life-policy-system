@@ -14,3 +14,4 @@ public enum AppConfig {
         return maxClaimAmount;
     }
 }
+
